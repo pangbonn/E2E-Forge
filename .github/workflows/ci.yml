@@ -1,0 +1,49 @@
+name: Project-Guardrail-CI
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  quality-assurance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      # 1. ตรวจสอบความสะอาดของโค้ด (ห้ามมี Error ในเครื่องหมายเซมิโคลอน หรือตัวแปรไม่ได้ใช้)
+      - name: Lint Check
+        run: npm run lint
+
+      # 2. ตรวจสอบ Business Rules (กฎ amount > 0 และ category matching)
+      - name: Run Business Logic Tests
+        run: npm run test:unit
+        env:
+          DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
+
+      # 3. ตรวจสอบความปลอดภัย (Own Only Access)
+      - name: Run Security Integration Tests
+        run: npm run test:security
+
+      # 4. ลอง Build จริง (ถ้าพังห้าม Deploy)
+      - name: Build Check
+        run: npm run build
+
+  # รายงานผลกลับไปยัง Devin/GitHub
+  report-status:
+    needs: quality-assurance
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Failure
+        run: echo "CI failed! Devin, please fix the errors before merging."
