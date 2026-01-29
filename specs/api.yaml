@@ -1,0 +1,37 @@
+api:
+  base: /api
+  auth: required
+
+endpoints:
+
+  - name: create_transaction
+    method: POST
+    path: /transactions
+    body:
+      type: object
+      required: [type, amount, category, occurred_at]
+    rules:
+      - amount > 0
+      - category.type must_match transaction.type
+
+  - name: list_transactions
+    method: GET
+    path: /transactions
+    query:
+      - from_date
+      - to_date
+      - type
+    access: own_only
+
+  - name: summary_by_category
+    method: GET
+    path: /reports/category
+    returns:
+      - category
+      - total_amount
+
+  - name: delete_transaction
+    method: DELETE
+    path: /transactions/{id}
+    rules:
+      - only_admin

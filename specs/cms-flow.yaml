@@ -1,0 +1,37 @@
+flows:
+
+  - name: add_expense
+    actor: user
+    ui_hint:
+      component_style: daisyui
+      layout: mobile_first
+    steps:
+      - open_page: /transactions/new
+      - input:
+          fields: [amount, category, note, occurred_at]
+      - submit
+      - system:
+          validate:
+            - amount > 0
+            - category.type == expense
+      - result:
+          success: transaction_created
+          failure: show_error
+
+  - name: view_monthly_summary
+    actor: user
+    steps:
+      - open_page: /reports
+      - select: month
+      - system:
+          fetch: summary_by_category
+      - render: chart_and_table
+
+  - name: admin_delete_transaction
+    actor: admin
+    steps:
+      - open_page: /admin/transactions
+      - select: transaction
+      - confirm: delete
+      - system:
+          action: delete_transaction
