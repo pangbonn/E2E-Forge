@@ -21,7 +21,23 @@ endpoints:
       - from_date
       - to_date
       - type
+      - limit:
+          type: integer
+          default: 20
+          max: 100
+          description: Maximum number of transactions to return per page
+      - offset:
+          type: integer
+          default: 0
+          description: Number of transactions to skip for pagination
     access: own_only
+    returns:
+      data: array[Transaction]
+      pagination:
+        total: integer
+        limit: integer
+        offset: integer
+        has_more: boolean
 
   - name: summary_by_category
     method: GET
