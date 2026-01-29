@@ -1,58 +1,49 @@
 system:
   name: expense-tracker
   description: >
-    ระบบจัดการรายรับรายจ่ายส่วนบุคคล
-    รองรับการบันทึก วิเคราะห์ และตรวจสอบข้อมูลทางการเงิน
+    ระบบจัดการรายรับรายจ่ายส่วนบุคคลแบบ Full-stack 
+    ใช้ Next.js ร่วมกับ Supabase (Auth, DB, Realtime)
 
-actors:
-  - user
-  - admin
+implementation_stack:
+  framework: Next.js 14+ (App Router)
+  language: TypeScript
+  database: Supabase (PostgreSQL)
+  orm: Prisma or Supabase Client
+  auth: Supabase Auth (JWT-based)
+  styling: TailwindCSS + DaisyUI
 
 core_rules:
-  - users_can_only_access_own_data
-  - all_amounts_must_be_positive_number
-  - every_transaction_must_have_category
-  - transactions_are_immutable_after_posted
+  - users_can_only_access_own_data: 
+      mechanism: "Supabase Row Level Security (RLS)" # บังคับใช้ RLS ที่ระดับฐานข้อมูล
+  - all_amounts_must_be_positive_number:
+      mechanism: "Database Constraint + Zod Validation"
+  - transactions_are_immutable:
+      rule: "No UPDATE allowed on Transaction table, only INSERT/DELETE"
 
 entities:
   User:
-    fields: [id, email, role]
+    fields: [id, email, role] # Sync กับ auth.users ของ Supabase
   Transaction:
     fields:
       - id
-      - user_id
-      - type        # income | expense
-      - amount
-      - category
-      - note
-      - occurred_at
-      - created_at
+      - user_id (ref: User)
+      - type: enum [income, expense]
+      - amount: integer # เก็บเป็นหน่วยสตางค์ (Cents)
+      - category_id (ref: Category)
+      - note: string
+      - occurred_at: timestamp
   Category:
     fields: [id, name, type]
 
 non_functional:
   security:
-    auth: jwt
-    data_isolation: per_user
+    data_isolation: "Row Level Security (RLS) is mandatory"
   audit:
-    log_all_create_update_delete
-
+    log_strategy: "Create a dedicated 'audit_logs' table in Supabase"
+  
   ui:
-    platforms:
-      - web
-      - mobile
-      - pwa
-    framework:
-      css:
-        - tailwindcss
-        - daisyui
-    requirements:
-      - responsive_design
-      - mobile_first
-      - touch_friendly
+    platforms: [web, mobile, pwa]
+    requirements: [responsive_design, mobile_first, touch_friendly]
     pwa:
       offline_read: true
-      offline_write: false
-      installable: true
-      manifest_required: true
-      service_worker_required: true
+      service_worker: required
